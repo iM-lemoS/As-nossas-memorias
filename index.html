@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>As Nossas Memórias (Globo Sincronizado)</title>
+    <title>As Nossas Memórias (Globo Corrigido)</title>
     
     <script src="https://unpkg.com/three"></script>
     <script src="https://unpkg.com/globe.gl"></script>
@@ -47,7 +47,7 @@
              Substitui esta URL pela foto que queres usar 
             */
             background-image: url('https://unpkg.com/three-globe@2.31.1/example/img/night-sky.png');
-
+            
             background-size: cover;
             background-position: center;
             z-index: 1;
@@ -58,9 +58,10 @@
             z-index: 2;
             padding: 40px 60px;
             border-radius: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(1px);
-            -webkit-backdrop-filter: blur(1px);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         #title-container h1 {
@@ -159,7 +160,19 @@
             display: none;
         }
 
-        /* O .heart-marker CSS foi REMOVIDO (já não é preciso) */
+        /* Marcador de coração (agora é um elemento HTML no globo) */
+        .heart-marker {
+            font-size: 24px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-shadow: 0 0 4px rgba(0,0,0,0.5);
+            transition: transform 0.2s ease;
+            pointer-events: all !important; /* Garante que é clicável */
+        }
+        .heart-marker:hover {
+            transform: scale(1.3);
+        }
 
         /* --- MODAIS (Pop-ups) --- */
         
@@ -393,27 +406,32 @@
                     // Fundo de estrelas
                     .backgroundImageUrl('//unpkg.com/three-globe@2.31.1/example/img/night-sky.png')
                     
-                    // Imagem de base para o MAR (azul escuro com luzes de cidades)
+                    // !! CORREÇÃO !! Usar a imagem de base para o MAR
+                    // Esta imagem é azul escura e tem luzes de cidades
                     .globeImageUrl('8k_black.jpg')
+                    .atmosphereColor('rgba(255, 50, 50, 0.3)')
+                    
 
-                    // --- [CORREÇÃO] Usar LABELS em vez de HTML ---
-                    .labelsData(memories) // Usa o mesmo array de memórias
-                    .labelText(() => '❤️') // O texto do label é o coração
-                    .labelSize(1.2)           // Tamanho do coração (podes ajustar)
-                    .labelResolution(4)       // Qualidade/Nitidez do coração
-                    .labelDotRadius(0.4)      // Um pequeno ponto debaixo do coração
-                    .labelColor(() => 'rgba(255, 100, 100, 0.8)') // Cor do ponto
-                    .onLabelClick((d) => {    // Nova função de clique para labels
-                        showMemory(d);
-                    });
-                    // --- Fim da Correção ---
+                    // --- Marcadores de HTML (Corações) ---
+                    .htmlElementsData(memories) // Usa o nosso array de memórias
+                    .htmlElement(d => {
+                        const el = document.createElement('div');
+                        el.innerHTML = '❤️';
+                        el.className = 'heart-marker';
+                        
+                        el.addEventListener('click', (e) => {
+                            e.stopPropagation(); 
+                            showMemory(d);
+                        });
+                        return el;
+                    })
+                    .htmlElementTransitionDuration(1000); // Animação
                 
                 // --- Evento de clique NO GLOBO (para adicionar) ---
                 globe.onGlobeClick((coords, e) => {
-                    // Se o clique for num label, o onLabelClick trata,
-                    // mas o onGlobeClick pode disparar também.
-                    // A nossa lógica em showMemory() já previne isto.
-                    
+                    if (e && e.target && (e.target.classList.contains('heart-marker') || e.target.closest('.heart-marker'))) {
+                        return;
+                    }
                     if (!addingMemory) return;
 
                     newMemoryLocation = { lat: coords.lat, lng: coords.lng };
@@ -427,9 +445,6 @@
                 globe.controls().enableZoom = true;
                 globe.controls().autoRotate = true;
                 globe.controls().autoRotateSpeed = 0.1;
-
-                // Cor da atmosfera
-                globe.atmosphereColor('rgba(250,50,0,0.3)');
             }
 
             /**
@@ -446,15 +461,13 @@
                 
                 // Adiciona ao array e atualiza o globo
                 memories.push(newMemory);
-                globe.labelsData(memories); // Atualiza os labels
+                globe.htmlElementsData(memories);
             }
 
             /**
-             * Chamado quando um marcador ❤️ (label) é clicado
+             * Chamado quando um marcador ❤️ é clicado
              */
             function showMemory(memoryData) {
-                // Se estivermos em modo de adição, cancela-o
-                // Isto impede que o onGlobeClick faça alguma coisa
                 if (addingMemory) {
                     addingMemory = false;
                     tooltip.style.display = 'none';
@@ -536,7 +549,7 @@
 
                 if (!photoFile) {
                     addMarkerToGlobe(newMemoryLocation.lat, newMemoryLocation.lng, message, null);
-                    closeModal();
+                    closeAddModal();
                     return;
                 }
 
