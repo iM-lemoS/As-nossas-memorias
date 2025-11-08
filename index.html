@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>As Nossas Memórias (Apenas Ver)</title>
+    
+    <script src="https://unpkg.com/three"></script>
+    <script src="https://unpkg.com/globe.gl"></script>
+
+    <style>
+        /* --- GERAL --- */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Georgia', 'Times New Roman', Times, serif; overflow: hidden; }
+        section { width: 100%; height: 100vh; display: none; box-sizing: border-box; position: relative; }
+
+        /* --- SECÇÃO 1: ECRÃ INICIAL --- */
+        #home { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .background-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('https://unpkg.com/three-globe@2.31.1/example/img/night-sky.png'); background-size: cover; background-position: center; z-index: 1; }
+        #title-container { position: relative; z-index: 2; padding: 40px 60px; border-radius: 15px; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        #title-container h1 { font-size: 3.5rem; color: white; margin: 0; text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8); }
+        #title-container h2 { font-size: 1.5rem; color: white; margin: 10px 0 0 0; font-weight: normal; font-style: italic; text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.7); }
+        #go-to-map { position: relative; z-index: 2; margin-top: 30px; padding: 12px 25px; font-size: 1rem; font-family: 'Georgia', serif; color: white; background-color: rgba(211, 75, 86, 0.7); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 25px; cursor: pointer; transition: all 0.3s ease; }
+        #go-to-map:hover { background-color: rgba(211, 75, 86, 1); transform: scale(1.05); }
+
+        /* --- SECÇÃO 2: GLOBO 3D --- */
+        #map-section { background-color: #000; }
+        #globe-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        #globe-container canvas { display: block; }
+        
+        /* !! MUDANÇA !! - CSS do botão Adicionar e Tooltip removidos */
+
+        .heart-marker { font-size: 24px; background: transparent; border: none; cursor: pointer; text-shadow: 0 0 4px rgba(0,0,0,0.5); transition: transform 0.2s ease; pointer-events: all !important; }
+        .heart-marker:hover { transform: scale(1.3); }
+        #globe-container .html-layer { pointer-events: none; }
+
+        /* --- MODAIS (Pop-ups) --- */
+        .modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 2000; justify-content: center; align-items: center; font-family: Arial, sans-serif; }
+        .modal-box { background-color: white; padding: 25px; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); width: 90%; max-width: 400px; }
+        .modal-box h3 { margin-top: 0; text-align: center; }
+
+        /* !! MUDANÇA !! - CSS do Modal de Adicionar removido */
+
+        /* Modal de VER (Mantido) */
+        #view-memory-modal { text-align: center; }
+        #view-memory-photo { 
+            max-width: 100%; 
+            max-height: 300px; 
+            border-radius: 5px; 
+            margin-bottom: 15px; 
+
+            /* !! CORREÇÃO AQUI !! */
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #view-memory-message { font-size: 1.1rem; font-family: 'Georgia', serif; color: #333; margin-bottom: 20px; }
+        #close-view-modal { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; background-color: #d34b56; color: white; font-size: 0.9rem; }
+    </style>
+    </style>
+</head>
+<body>
+
+    <section id="home">
+        <div class="background-image"></div>
+        <div id="title-container">
+            <h1>As nossas memórias</h1>
+            <h2>Feliz 2 anos e 5 meses ❤️</h2>
+        </div>
+        <button id="go-to-map">Ver o mapa</button>
+    </section>
+
+    <section id="map-section">
+        <div id="globe-container"></div>
+        
+        </section>
+
+    <div id="view-memory-modal-backdrop" class="modal-backdrop">
+        <div id="view-memory-modal" class="modal-box">
+            <img id="view-memory-photo" src="" alt="Foto da Memória">
+            <p id="view-memory-message">Mensagem de exemplo</p>
+            <button id="close-view-modal">Fechar</button>
+        </div>
+    </div>
+    
+    <script>
+        // !! MUDANÇA !! - Configuração do Firebase removida
+        
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- VARIÁVEIS GLOBAIS ---
+            let globe;
+            let memories = []; // Array vai ser preenchido pela função loadInitialMemories
+            
+            // !! MUDANÇA !! - Variáveis de Adicionar removidas
+            
+            // --- ELEMENTOS DO DOM ---
+            const homeSection = document.getElementById('home');
+            const mapSection = document.getElementById('map-section');
+            const goToMapBtn = document.getElementById('go-to-map');
+            const globeContainer = document.getElementById('globe-container');
+            
+            // !! MUDANÇA !! - Elementos de Adicionar removidos
+            
+            // Modal de Ver (Mantido)
+            const viewModalBackdrop = document.getElementById('view-memory-modal-backdrop');
+            const closeViewModalBtn = document.getElementById('close-view-modal');
+            const viewPhoto = document.getElementById('view-memory-photo');
+            const viewMessage = document.getElementById('view-memory-message');
+
+            // --- EVENTOS PRINCIPAIS ---
+
+            goToMapBtn.addEventListener('click', () => {
+                homeSection.style.display = 'none';
+                mapSection.style.display = 'block';
+                if (!globe) {
+                    initGlobe();
+                }
+            });
+
+            // !! MUDANÇA !! - Eventos de Adicionar/Salvar/Cancelar removidos
+
+            closeViewModalBtn.addEventListener('click', () => {
+                viewModalBackdrop.style.display = 'none';
+            });
+
+
+            // --- FUNÇÕES DO GLOBO ---
+
+            function initGlobe() {
+                // !! MUDANÇA !! - Carrega as memórias hard-coded
+                loadInitialMemories(); 
+
+                const countriesGeoJsonUrl = 'https://unpkg.com/world-atlas/countries-50m.json';
+
+                globe = Globe()
+                    (document.getElementById('globe-container'))
+                    .backgroundImageUrl('//unpkg.com/three-globe@2.31.1/example/img/night-sky.png')
+                    .globeImageUrl('8k_black.jpg')
+                    .atmosphereColor('rgba(255, 50, 50, 0.3)')
+                    .polygonsData(countriesGeoJsonUrl)
+                    .polygonCapColor(() => 'rgba(200, 200, 200, 0.5)') 
+                    .polygonSideColor(() => 'rgba(255, 255, 255, 0.1)')
+                    .polygonStrokeColor(() => 'rgba(255, 255, 255, 0.7)')
+                    .htmlElementsData(memories) // Usa o array de memórias
+                    .htmlElement(d => {
+                        const el = document.createElement('div');
+                        el.innerHTML = '❤️';
+                        el.className = 'heart-marker';
+                        el.addEventListener('click', (e) => {
+                            e.stopPropagation(); 
+                            showMemory(d);
+                        });
+                        return el;
+                    })
+                    .htmlElementTransitionDuration(1000); 
+                
+                // !! MUDANÇA !! - Lógica de clique para adicionar removida
+
+                globe.controls().enableZoom = true;
+                globe.controls().autoRotate = true;
+                globe.controls().autoRotateSpeed = 0.1;
+                
+                // !! MUDANÇA !! - Listener do Firebase removido
+            }
+
+            /**
+             * Chamado quando um marcador ❤️ é clicado
+             */
+            function showMemory(memoryData) {
+                viewMessage.textContent = memoryData.message;
+                
+                // !! MUDANÇA !! - Lógica da foto recolocada
+                if (memoryData.photoUrl) {
+                    viewPhoto.src = memoryData.photoUrl;
+                    viewPhoto.style.display = 'block';
+                } else {
+                    viewPhoto.style.display = 'none';
+                }
+                
+                viewModalBackdrop.style.display = 'flex';
+                
+                const altitude = 0.5; 
+                const duration = 1500;
+                globe.pointOfView({ 
+                    lat: memoryData.lat, 
+                    lng: memoryData.lng, 
+                    altitude: altitude 
+                }, duration);
+            }
+
+            /**
+             * !! MUDANÇA !! - Esta função agora define as tuas memórias
+             */
+            function loadInitialMemories() {
+                /*
+                 * !! EDITA AQUI AS MEMÓRIAS !!
+                 */
+                memories = [
+                    {
+                        id: 1,
+                        lat: 38.951173576064356, // Ericeira
+                        lng: -9.409337153881832,
+                        message: "Ainda nem sabíamos o que o futuro nos reservava.",
+                        photoUrl: "fotos/1.jpg" 
+                    },
+                    {
+                        id: 2,
+                        lat: 38.81800403239891, // Lisboa
+                        lng: -9.284495796682497,
+                        message: "Onde a nossa história começou. ❤️",
+                        photoUrl: "fotos/2.jpg" 
+                    },
+                    {
+                        id: 3,
+                        lat: 38.21071958461464, // Vidigueira
+                        lng: -7.80930481717459,
+                        message: "A primeira vez nos anos do Rafa já apaixonados!",
+                        photoUrl: "fotos/3.jpg" 
+                    },
+                    {
+                        id: 4,
+                        lat: 38.67632891428131, // Praia da Torre
+                        lng: -9.322821896549092,
+                        message: "Madrugadores na praia, só nós dois.",
+                        photoUrl: "fotos/4.jpg" 
+                    },
+                    {
+                        id: 5,
+                        lat: 38.75271399677673, // Magical Garden
+                        lng: -9.260143885209317,
+                        message: "Um passeio diferente e mágico!",
+                        photoUrl: "fotos/5.jpg" 
+                    },
+                    {
+                        id: 6,
+                        lat: 39.28994392932312, // Crato
+                        lng: -7.645029703627585,
+                        message: "Cratoo!!! 😝",
+                        photoUrl: "fotos/6.jpeg" 
+                    },
+                    {
+                        id: 7,
+                        lat: 48.858469911742326, // Torre Eiffel
+                        lng: 2.2944926955940406,
+                        message: "Paris! Je t'aime! ❤️",
+                        photoUrl: "fotos/7.jpeg" 
+                    },
+                    {
+                        id: 8,
+                        lat: 48.86754809292773, // DisneyLand
+                        lng: 2.7835286238945396,
+                        message: "Disneyland com a minha princesa! 🏰",
+                        photoUrl: "fotos/8.jpg" 
+                    },
+                    {
+                        id: 9,
+                        lat: 38.64595709492786, // Costa da caparica
+                        lng: -9.241358311817647,
+                        message: "Praia em outubro? Só nós!",
+                        photoUrl: "fotos/9.jpeg" 
+                    },
+                    {
+                        id: 10,
+                        lat: 38.70644423381117, // Lat.a
+                        lng: -9.174359325654715,
+                        message: "A minha namorada agora é maior de idade! 🎉",
+                        photoUrl: "fotos/10.jpeg" 
+                    },
+                    {
+                        id: 11,
+                        lat: 38.763777709988105, // Oceanário
+                        lng: -9.093762961326032,
+                        message: "Fomos ver os peixinhos! 🐠",
+                        photoUrl: "fotos/11.png" 
+                    },
+                    {
+                        id: 12,
+                        lat: 38.72851768610892, // Wonderland Lisboa
+                        lng: -9.152714990163654,
+                        message: "A magia do nosso primiero NATAL! 🎄",
+                        photoUrl: "fotos/12.jpg" 
+                    },
+                    {
+                        id: 13,
+                        lat: 38.7685537253825, // Tatuagem
+                        lng: -9.18501756885368,
+                        message: "A minha namorada enlouqueceu e fez uma tatuagem! 😍",
+                        photoUrl: "fotos/13.jpg" 
+                    },
+                    {
+                        id: 14,
+                        lat: 39.9878047621967, // Terrinha da Sara
+                        lng: -8.127147968073347,
+                        message: "Primeira vez na terrinha da Sara! ❤️",
+                        photoUrl: "fotos/14.jpg" 
+                    },
+                    {
+                        id: 15,
+                        lat: 51.496841879070416, // Londres
+                        lng: -0.17632428758397356,
+                        message: "A nossa aventura em Londres!",
+                        photoUrl: "fotos/15.jpeg" 
+                    },
+                    {
+                        id: 16,
+                        lat: 38.968216358001364, // Carnaval
+                        lng: -9.407528887639572,
+                        message: "O segredo do nosso primeiro Carnaval juntos! 🤫",
+                        photoUrl: "fotos/16.jpg" 
+                    },
+                    {
+                        id: 17,
+                        lat: 38.72890027569632, // Estufa fria Lisboa
+                        lng: -9.155082088312724,
+                        message: "O primeiro dia dos namorados! 🌹",
+                        photoUrl: "fotos/17.jpg" 
+                    },
+                    {
+                        id: 18,
+                        lat: 38.69873343457131, // Jardim Botânico Tropical
+                        lng: -9.202647897841898,
+                        message: "A minha namorada levou-me a passear! 🌺",
+                        photoUrl: "fotos/18.jpg" 
+                    },
+                    {
+                        id: 19,
+                        lat: 38.667179741904505, // Egas Moniz
+                        lng: -9.200221274823344,
+                        message: "Tão giros que eles foram para a gala da Egas Moniz! 🎓",
+                        photoUrl: "fotos/19.jpg" 
+                    },
+                    {
+                        id: 20,
+                        lat: 39.413020229138404, // Ilha das berlenga
+                        lng: -9.513188011507959,
+                        message: "1 ano de namoro na Ilha das Berlengas! ❤️",
+                        photoUrl: "fotos/20.jpg" 
+                    },
+                    {
+                        id: 21,
+                        lat: 37.11201753205402, // Meia praia em lagos
+                        lng: -8.65707941952889,
+                        message: "Lagos com a minha princesa e amigos! 🏖️",
+                        photoUrl: "fotos/21.JPG" 
+                    },
+                    {
+                        id: 22,
+                        lat: 37.405833543401485, // Isla Mágica
+                        lng: -5.999260080396539,
+                        message: "Just walking around ISLA MÁGICA! 🎢",
+                        photoUrl: "fotos/22.jpg" 
+                    },
+                    {
+                        id: 23,
+                        lat: 37.10453387098329, // aArmação de Pera
+                        lng: -8.369439096293872,
+                        message: "Férias em Armação de Pêra. 🌞",
+                        photoUrl: "fotos/23.jpg" 
+                    },
+                    {
+                        id: 24,
+                        lat: 41.389614780268836, // Barcelona
+                        lng: 2.1865793095099124,
+                        message: "Barcelona! Pit stop no Interrail.",
+                        photoUrl: "fotos/24.JPG" 
+                    },
+                    {
+                        id: 25,
+                        lat: 43.73708514563353, // Monaco
+                        lng: 7.423299053759423,
+                        message: "Monaco! Demos a volta a um país a pé. 😅",
+                        photoUrl: "fotos/25.JPG" 
+                    },
+                    {
+                        id: 26,
+                        lat: 46.68651661705214, // Suíça
+                        lng: 7.862582665401474,
+                        message: "Suíça! Uau, que paisagem! 🏞️",
+                        photoUrl: "fotos/26.JPG" 
+                    },
+                    {
+                        id: 27,
+                        lat: 48.18615706327711, // Viena
+                        lng: 16.312668378662188,
+                        message: "Viena! O palácio era giro mas os modelos eram melhores. 😍",
+                        photoUrl: "fotos/27.JPG" 
+                    },
+                    {
+                        id: 28,
+                        lat: 47.51880893108844, // Termas Budapeste
+                        lng: 19.082357639156783,
+                        message: "Tão relaxante as termas em Budapeste! 💆‍♀️",
+                        photoUrl: "fotos/28.jpg" 
+                    },
+                    {
+                        id: 29,
+                        lat: 42.655271151062834, // Dubrovinik
+                        lng: 18.070365204455005,
+                        message: "Dubrovnik era giro mas a minha namorada era mais! 😘",
+                        photoUrl: "fotos/29.JPG" 
+                    },
+                    {
+                        id: 30,
+                        lat: 46.0142507207174, // Lago di Como
+                        lng: 9.25840935745097,
+                        message: "Que local maravilhoso o Lago di Como! 🌅",
+                        photoUrl: "fotos/30.JPG" 
+                    },
+                    {
+                        id: 31,
+                        lat: 45.464344199375844, // Milão
+                        lng: 9.189720355618475,
+                        message: "Milano! A cidade não era incrivel, mas a companhia sim! ❤️",
+                        photoUrl: "fotos/31.JPG" 
+                    },
+                    {
+                        id: 32,
+                        lat: 43.7256022528793, // Pisa
+                        lng: 10.397265570543345,
+                        message: "Olha que fofa ela a tentar segurar a torre de Pisa! 😄",
+                        photoUrl: "fotos/32.JPG" 
+                    },
+                    {
+                        id: 33,
+                        lat: 43.769811870088276, // Florença
+                        lng: 11.257967242428506,
+                        message: "Florença! As paisagens, a namorada... tudo perfeito! 🌄",
+                        photoUrl: "fotos/33.jpg" 
+                    },
+                    {
+                        id: 34,
+                        lat: 41.89038588105071, // Roma
+                        lng: 12.492284540688258,
+                        message: "Roma! História por todo o lado e amor no ar! ❤️",
+                        photoUrl: "fotos/34.JPG" 
+                    },
+                    {
+                        id: 35,
+                        lat: 38.79775985833293, // 19 da Sara
+                        lng: -9.192545778923991,
+                        message: "O meu amor fez 19 aninhos! 🎉",
+                        photoUrl: "fotos/35.jpg" 
+                    },
+                    {
+                        id: 36,
+                        lat: 38.791179579333615, // Happy nem year
+                        lng: -9.194429293870582,
+                        message: "Feliz Ano Novo! 🎆",
+                        photoUrl: "fotos/36.jpg" 
+                    },
+                    {
+                        id: 37,
+                        lat: 52.38404575131723, // Amesterdão
+                        lng: 4.902107912472382,
+                        message: "Amesterdão! Adoro viajar só contigo! ✈️",
+                        photoUrl: "fotos/37.jpg" 
+                    },
+                    {
+                        id: 38,
+                        lat: 41.14779713123656, // Porto
+                        lng: -8.603542599289606,
+                        message: "Uma visitinha aos nortenhos ahaha!",
+                        photoUrl: "hfotos/38.JPG" 
+                    },
+                    {
+                        id: 39,
+                        lat: 38.750707321202384, // 2 anos com esta princesa
+                        lng: -8.967443921533482,
+                        message: "2 anos com esta princesa! Amo-te tantoooo! ❤️❤️❤️",
+                        photoUrl: "fotos/39.JPG" 
+                    },
+                    {
+                        id: 40,
+                        lat: 37.440943112901195, // Odeceixe
+                        lng: -8.798072770288394,
+                        message: "Primeira vez em Odeceixe! Que paraíso! 🌊",
+                        photoUrl: "fotos/40.JPG" 
+                    },
+                    {
+                        id: 41,
+                        lat: 38.21071958461464, // Vidigueira
+                        lng: -7.80930481717459,
+                        message: "Que bom voltar a ter o meu amor comigo nos meus anos! ❤️",
+                        photoUrl: "fotos/41.jpg" 
+                    },
+                    {
+                        id: 42,
+                        lat: 33.812066927573106, // Tunísia
+                        lng: 10.84223417990519,
+                        message: "Que viagem incrível à Tunísia! Adorei ter conseguido partilhar isto contigo! ❤️",
+                        photoUrl: "fotos/42.jpg" 
+                    },
+                    {
+                        id: 43,
+                        lat: 52.2366740421848, // Varsóvia
+                        lng: 21.004621705996666,
+                        message: "Uma visitinha rápida a Varsóvia. Bom Eramus amor, aproveita mas volta rápido! 🥺",
+                        photoUrl: "fotos/43.jpg" 
+                    }
+                ];
+            }
+
+            // !! MUDANÇA !! - Funções closeAddModal() e saveMemory() removidas
+
+        });
+    </script>
+</body>
+</html>
