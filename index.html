@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>As Nossas Memórias (Apenas Ver)</title>
+    <title>As Nossas Memórias</title>
     
     <script src="https://unpkg.com/three"></script>
     <script src="https://unpkg.com/globe.gl"></script>
@@ -14,8 +14,58 @@
         section { width: 100%; height: 100vh; display: none; box-sizing: border-box; position: relative; }
 
         /* --- SECÇÃO 1: ECRÃ INICIAL --- */
-        #home { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        .background-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('https://unpkg.com/three-globe@2.31.1/example/img/night-sky.png'); background-size: cover; background-position: center; z-index: 1; }
+        #home { 
+            display: flex; /* Começa visível */
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            text-align: center; 
+        }
+        .background-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('story.png'); background-size: cover; background-position: center; z-index: 1; }
+        
+        /* !! MUDANÇA !! - Cabeçalho de Navegação */
+        #main-nav {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 70px; /* Altura da barra */
+            background-color: white; /* Fundo branco */
+            z-index: 3;
+            display: flex; /* Para usar flexbox */
+            justify-content: space-between; /* Itens nas extremidades */
+            align-items: center; /* Centrar verticalmente */
+            padding: 0 30px; /* Espaçamento nas laterais */
+            box-sizing: border-box;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Sombra suave */
+        }
+        
+        /* !! NOVO !! - Estilo para "R ❤️ S" */
+        #nav-brand {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #d34b56; /* Cor vermelha */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .nav-button {
+            background-color: #d34b56;
+            border: 1px solid #ffffff; /* Borda vermelha */
+            color: #ffffff; /* Texto vermelho */
+            font-family: 'Georgia', serif;
+            font-size: 0.9rem;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-left: 15px; /* Mantém o espaçamento entre botões */
+            transition: all 0.3s ease;
+        }
+        .nav-button:hover {
+            background-color: #ffffff; /* Fundo vermelho no hover */
+            color: #d34b56; /* Texto branco no hover */
+            border: 1px solid #d34b56;
+        }
+        
         #title-container { position: relative; z-index: 2; padding: 40px 60px; border-radius: 15px; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
         #title-container h1 { font-size: 3.5rem; color: white; margin: 0; text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8); }
         #title-container h2 { font-size: 1.5rem; color: white; margin: 10px 0 0 0; font-weight: normal; font-style: italic; text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.7); }
@@ -26,53 +76,205 @@
         #map-section { background-color: #000; }
         #globe-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         #globe-container canvas { display: block; }
-        
-        /* !! MUDANÇA !! - CSS do botão Adicionar e Tooltip removidos */
-
         .heart-marker { font-size: 24px; background: transparent; border: none; cursor: pointer; text-shadow: 0 0 4px rgba(0,0,0,0.5); transition: transform 0.2s ease; pointer-events: all !important; }
         .heart-marker:hover { transform: scale(1.3); }
         #globe-container .html-layer { pointer-events: none; }
+        
+        /* Botão de Voltar (partilhado) */
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333; /* Cor mais escura para o texto */
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            line-height: 1;
+            padding-bottom: 4px; /* Ajuste para centrar a seta */
+        }
+        .back-button:hover {
+            background-color: #f4f4f4;
+        }
+        
+        /* Secção 3: Mensagem */
+        #message-section {
+            display: none; /* Começa escondida */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .message-container {
+            position: relative;
+            z-index: 2;
+            padding: 40px 50px;
+            border-radius: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            max-width: 800px;
+            margin-top: 70px; /* Mantém isto se tiveres */
+            
+            /* !! ADICIONA ESTAS DUAS LINHAS !! */
+            max-height: 80vh;  /* Limita a altura */
+            overflow-y: auto; /* Adiciona scroll vertical */
+
+            /* !! BÓNUS !! - Scrollbar para Firefox */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+        }
+        .message-container h3 {
+            font-size: 2.5rem;
+            margin-top: 0;
+            color: white;
+            text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.7);
+        }
+         .message-container p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            text-align: left;
+        }
+
 
         /* --- MODAIS (Pop-ups) --- */
         .modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 2000; justify-content: center; align-items: center; font-family: Arial, sans-serif; }
-        .modal-box { background-color: white; padding: 25px; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); width: 90%; max-width: 400px; }
+        .modal-box { 
+            background: rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px); 
+            padding: 25px; 
+            border-radius: 10px; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3); 
+            width: 90%; 
+            max-width: 600px; /* Aumentado */
+        }
         .modal-box h3 { margin-top: 0; text-align: center; }
-
-        /* !! MUDANÇA !! - CSS do Modal de Adicionar removido */
 
         /* Modal de VER (Mantido) */
         #view-memory-modal { text-align: center; }
         #view-memory-photo { 
             max-width: 100%; 
-            max-height: 300px; 
+            max-height: 450px; /* Aumentado */
             border-radius: 5px; 
             margin-bottom: 15px; 
-
-            /* !! CORREÇÃO AQUI !! */
             display: block;
             margin-left: auto;
             margin-right: auto;
+            cursor: zoom-in;
         }
-        #view-memory-message { font-size: 1.1rem; font-family: 'Georgia', serif; color: #333; margin-bottom: 20px; }
+        #view-memory-message { font-size: 1.1rem; font-family: 'Georgia', serif; color: #fff; margin-bottom: 20px; }
         #close-view-modal { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; background-color: #d34b56; color: white; font-size: 0.9rem; }
-    </style>
+
+        /* CSS para o Lightbox (Imagem Grande) */
+        .fullscreen-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+            cursor: zoom-out;
+        }
+        #fullscreen-image {
+            max-width: 90%;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 5px;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+        #close-fullscreen {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        /* !! BÓNUS !! - Estilo da Scrollbar para Chrome/Safari/Edge */
+        .message-container::-webkit-scrollbar {
+            width: 10px;
+        }
+        .message-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1); /* Cor da "pista" */
+            border-radius: 10px;
+        }
+        .message-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3); /* Cor do "puxador" */
+            border-radius: 10px;
+        }
+        .message-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
     </style>
 </head>
 <body>
 
     <section id="home">
         <div class="background-image"></div>
+        
+        <nav id="main-nav">
+            <span id="nav-brand">R ❤️ S</span>
+            <div>
+                <button id="nav-map-btn" class="nav-button">Mapa</button>
+                <button id="nav-message-btn" class="nav-button">Mensagem para ti</button>
+            </div>
+        </nav>
+        
         <div id="title-container">
             <h1>As nossas memórias</h1>
             <h2>Feliz 2 anos e 5 meses ❤️</h2>
         </div>
-        <button id="go-to-map">Ver o mapa</button>
+        <button id="go-to-map">Abrir o mapa</button>
     </section>
 
     <section id="map-section">
+        <button id="map-back-btn" class="back-button">←</button>
         <div id="globe-container"></div>
+    </section>
+
+    <section id="message-section">
+        <div class="background-image"></div>
+        <button id="message-back-btn" class="back-button">←</button>
         
-        </section>
+        <div class="message-container">
+            <h3>Uma Mensagem para Ti ❤️</h3>
+            <p>
+                Meu amor,
+                <br><br>
+                Dizem que o verdadeiro amor aparece quando menos esperamos, e a nossa história é a prova perfeita disso. Olhando para trás, sinto que o que temos já estava plantado em nós há muito tempo, mesmo antes de sabermos. Era uma sementinha que só precisava do momento certo para florescer.
+                <br><br>
+                Como qualquer grande aventura, a nossa tem tido altos e baixos. Mas em cada momento, bom ou menos bom, uma coisa nunca vacilou: o nosso amor. Cada desafio só me tornou mais forte e mais certo do que sinto por ti.
+                <br><br>
+                Sabes que uma das coisas que mais adoro no mundo é viajar contigo. Cada sítio novo, cada escapadinha, é um capítulo que adicionamos à nossa história. Foi por isso que tive esta ideia. Este mapa não é só um conjunto de pontos num globo; é o diário visual das nossas aventuras, um lembrete de tudo o que já vivemos.
+                <br><br>
+                Pensa nisto como um "rascunho". É a nossa preparação para o dia em que vamos ter o nosso mapa mundo na parede da <b>nossa</b> futura casa, cheio de pins e fotos de uma vida inteira de aventuras.
+                <br><br>
+                Obrigado por seres a melhor companheira de viagem que eu podia pedir. Mal posso esperar pelo nosso próximo destino.
+                <br><br>
+                Amo-te mais do que tudo neste mundo e o meu sonho é viver 1001 aventuras para o resto da minha vida contigo.
+            </p>
+        </div>
+    </section>
 
     <div id="view-memory-modal-backdrop" class="modal-backdrop">
         <div id="view-memory-modal" class="modal-box">
@@ -82,54 +284,102 @@
         </div>
     </div>
     
+    <div id="fullscreen-backdrop" class="fullscreen-backdrop">
+        <span id="close-fullscreen">&times;</span>
+        <img id="fullscreen-image" src="" alt="Memória em ecrã completo">
+    </div>
+    
     <script>
-        // !! MUDANÇA !! - Configuração do Firebase removida
-        
         document.addEventListener('DOMContentLoaded', () => {
-
-            // --- VARIÁVEIS GLOBAIS ---
             let globe;
-            let memories = []; // Array vai ser preenchido pela função loadInitialMemories
-            
-            // !! MUDANÇA !! - Variáveis de Adicionar removidas
+            let memories = []; 
             
             // --- ELEMENTOS DO DOM ---
             const homeSection = document.getElementById('home');
             const mapSection = document.getElementById('map-section');
-            const goToMapBtn = document.getElementById('go-to-map');
             const globeContainer = document.getElementById('globe-container');
             
-            // !! MUDANÇA !! - Elementos de Adicionar removidos
-            
-            // Modal de Ver (Mantido)
+            // Novos Elementos de Navegação
+            const messageSection = document.getElementById('message-section');
+            const goToMapBtn = document.getElementById('go-to-map');
+            const navMapBtn = document.getElementById('nav-map-btn');
+            const navMessageBtn = document.getElementById('nav-message-btn');
+            const mapBackBtn = document.getElementById('map-back-btn');
+            const messageBackBtn = document.getElementById('message-back-btn');
+
+            // Modal de Ver
             const viewModalBackdrop = document.getElementById('view-memory-modal-backdrop');
             const closeViewModalBtn = document.getElementById('close-view-modal');
             const viewPhoto = document.getElementById('view-memory-photo');
             const viewMessage = document.getElementById('view-memory-message');
 
+            // Elementos do Lightbox
+            const fullscreenBackdrop = document.getElementById('fullscreen-backdrop');
+            const fullscreenImage = document.getElementById('fullscreen-image');
+            const closeFullscreenBtn = document.getElementById('close-fullscreen');
+
             // --- EVENTOS PRINCIPAIS ---
 
-            goToMapBtn.addEventListener('click', () => {
+            // Lógica de Navegação
+            function openMap() {
                 homeSection.style.display = 'none';
+                messageSection.style.display = 'none';
                 mapSection.style.display = 'block';
                 if (!globe) {
                     initGlobe();
                 }
-            });
+            }
 
-            // !! MUDANÇA !! - Eventos de Adicionar/Salvar/Cancelar removidos
+            function openMessage() {
+                homeSection.style.display = 'none';
+                mapSection.style.display = 'none';
+                messageSection.style.display = 'flex';
+            }
+            
+            function goHome() {
+                mapSection.style.display = 'none';
+                messageSection.style.display = 'none';
+                homeSection.style.display = 'flex';
+            }
 
+            // Atribuir os eventos
+            goToMapBtn.addEventListener('click', openMap);
+            navMapBtn.addEventListener('click', openMap);
+            navMessageBtn.addEventListener('click', openMessage);
+            mapBackBtn.addEventListener('click', goHome);
+            messageBackBtn.addEventListener('click', goHome);
+
+
+            // Evento para fechar Modal de Ver
             closeViewModalBtn.addEventListener('click', () => {
                 viewModalBackdrop.style.display = 'none';
             });
 
+            // Eventos para o Lightbox
+            viewPhoto.addEventListener('click', () => {
+                const currentSrc = viewPhoto.src;
+                if (currentSrc) {
+                    fullscreenImage.src = currentSrc;
+                    fullscreenBackdrop.style.display = 'flex';
+                }
+            });
+
+            function closeFullscreen() {
+                fullscreenBackdrop.style.display = 'none';
+                fullscreenImage.src = '';
+            }
+
+            closeFullscreenBtn.addEventListener('click', closeFullscreen);
+            fullscreenBackdrop.addEventListener('click', (e) => {
+                if (e.target.id === 'fullscreen-backdrop') {
+                    closeFullscreen();
+                }
+            });
+
 
             // --- FUNÇÕES DO GLOBO ---
-
             function initGlobe() {
-                // !! MUDANÇA !! - Carrega as memórias hard-coded
                 loadInitialMemories(); 
-
                 const countriesGeoJsonUrl = 'https://unpkg.com/world-atlas/countries-50m.json';
 
                 globe = Globe()
@@ -141,7 +391,7 @@
                     .polygonCapColor(() => 'rgba(200, 200, 200, 0.5)') 
                     .polygonSideColor(() => 'rgba(255, 255, 255, 0.1)')
                     .polygonStrokeColor(() => 'rgba(255, 255, 255, 0.7)')
-                    .htmlElementsData(memories) // Usa o array de memórias
+                    .htmlElementsData(memories)
                     .htmlElement(d => {
                         const el = document.createElement('div');
                         el.innerHTML = '❤️';
@@ -154,22 +404,14 @@
                     })
                     .htmlElementTransitionDuration(1000); 
                 
-                // !! MUDANÇA !! - Lógica de clique para adicionar removida
-
                 globe.controls().enableZoom = true;
                 globe.controls().autoRotate = true;
                 globe.controls().autoRotateSpeed = 0.1;
-                
-                // !! MUDANÇA !! - Listener do Firebase removido
             }
 
-            /**
-             * Chamado quando um marcador ❤️ é clicado
-             */
             function showMemory(memoryData) {
                 viewMessage.textContent = memoryData.message;
                 
-                // !! MUDANÇA !! - Lógica da foto recolocada
                 if (memoryData.photoUrl) {
                     viewPhoto.src = memoryData.photoUrl;
                     viewPhoto.style.display = 'block';
@@ -188,13 +430,8 @@
                 }, duration);
             }
 
-            /**
-             * !! MUDANÇA !! - Esta função agora define as tuas memórias
-             */
             function loadInitialMemories() {
-                /*
-                 * !! EDITA AQUI AS MEMÓRIAS !!
-                 */
+                // ... (O teu array 'memories' com 43 locais entra aqui) ...
                 memories = [
                     {
                         id: 1,
@@ -460,7 +697,7 @@
                         lat: 41.14779713123656, // Porto
                         lng: -8.603542599289606,
                         message: "Uma visitinha aos nortenhos ahaha!",
-                        photoUrl: "hfotos/38.JPG" 
+                        photoUrl: "fotos/38.JPG" 
                     },
                     {
                         id: 39,
@@ -499,9 +736,6 @@
                     }
                 ];
             }
-
-            // !! MUDANÇA !! - Funções closeAddModal() e saveMemory() removidas
-
         });
     </script>
 </body>
